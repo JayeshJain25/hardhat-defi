@@ -21,8 +21,44 @@ async function main() {
   );
 
   const daiPrice = await getDaiPrice();
+  const amountDiaToBorrow =
+    availableBorrowsETH.toString() * 0.95 * (1 / daiPrice.toNumber());
+  console.log(`You can borrow ${amountDiaToBorrow} DAI`);
+  const amountDaiToBorrowWei = ethers.utils.parseEther(
+    amountDiaToBorrow.toString()
+  );
+
   //BORROW
   //how much we have borrowed, how much we have in collateral, how much we can borrow
+  const diaTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+  await borrowDai(diaTokenAddress, lendingPool, amountDaiToBorrowWei, deployer);
+  await getBorrowUserData(lendingPool, deployer);
+  await repay(amountDaiToBorrowWei, diaTokenAddress, lendingPool, deployer);
+  await getBorrowUserData(lendingPool, deployer);
+}
+
+async function repay(amount, daiAddress, lendingPool, account) {
+  await approveErc20(daiAddress, lendingPool.address, amount, account);
+  const repayTx = await lendingPool.repay(daiAddress, amount, 1, account);
+  await repayTx.wait(1);
+  console.log("Repay!");
+}
+
+async function borrowDai(
+  daiAddress,
+  lendingPool,
+  amountDaiToBorrowWei,
+  account
+) {
+  const borrowTx = await lendingPool.borrow(
+    daiAddress,
+    amountDaiToBorrowWei,
+    1,
+    0,
+    account
+  );
+  await borrowTx.wait(1);
+  console.log("You've borowed!");
 }
 
 async function getDaiPrice() {
